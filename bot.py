@@ -8,8 +8,9 @@ import discord
 from discord.ext import commands
 from gtts import gTTS
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+emojis_enabled = False
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 def load_token():
     try:
@@ -45,8 +46,6 @@ SOUNDS = {
 }
 
 RESPONSES = {k: SOUNDS[k] for k in ("yes", "no", "hohoho", "ugh")}
-
-emojis_enabled = False
 
 EMOJIS = {
     "arrive": "1558295514758512670",
