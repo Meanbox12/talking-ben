@@ -312,11 +312,6 @@ async def ask(ctx, *, question: str):
         await ctx.message.add_reaction("<a:ugh:1558295585554178148>")
         return
 
-    voice_client = ctx.guild.voice_client
-    if not voice_client:
-        await ctx.send("I'm not in a voice channel. Use `b.join` first.")
-        return
-
     token = object()
     active[ctx.guild.id] = token
 
@@ -326,7 +321,8 @@ async def ask(ctx, *, question: str):
     print(f"(!) - {user_nickname} asked: {question}")
 
     try:
-        if not text_to_speech:
+        voice_client = ctx.guild.voice_client
+        if not voice_client or not text_to_speech:
             await respond(response, ctx, token)
             return
 
