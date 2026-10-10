@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 from gtts import gTTS
 
-emojis_enabled = True
+emojis_enabled = False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
