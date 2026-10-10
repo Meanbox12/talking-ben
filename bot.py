@@ -46,6 +46,8 @@ SOUNDS = {
 
 RESPONSES = {k: SOUNDS[k] for k in ("yes", "no", "hohoho", "ugh")}
 
+emojis_enabled = False
+
 EMOJIS = {
     "arrive": "1558295514758512670",
     "leave": "1558295597868646521",
@@ -232,7 +234,7 @@ async def join(ctx, *, channel_name: str = None):
 
     voice_client = await channel.connect()
     voice_client.play(discord.FFmpegPCMAudio(SOUNDS["arrive"]))
-    await ctx.send(f"<a:arrive:{EMOJIS['arrive']}> Joined {channel.name}!")
+    await ctx.send(f"{emojis_enabled and f'<a:arrive:{EMOJIS['arrive']} ' or ''}Joined {channel.name}!")
     print(f"(!) - Joined channel: {channel.name}")
 
 
@@ -282,7 +284,7 @@ async def respond(response: str, ctx, token):
         else:
             release(ctx.guild.id, token)
 
-        await ctx.reply(f"<a:{response}:{EMOJIS[response]}> Ben says: {response.capitalize()}")
+        await ctx.reply(f"{emojis_enabled and f'<a:{response}:{EMOJIS[response]}> ' or ''}Ben says: {response.capitalize()}")
     except Exception:
         release(ctx.guild.id, token)
         raise
