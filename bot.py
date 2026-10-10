@@ -151,8 +151,17 @@ SOUNDS = {
 RESPONSES = {
     "yes": SOUNDS["yes"],
     "no": SOUNDS["no"],
-    "laugh": SOUNDS["hohoho"],
+    "hohoho": SOUNDS["hohoho"],
     "ugh": SOUNDS["ugh"]
+}
+
+EMOJIS = {
+    "arrive": "1558295514758512670",
+    "leave": "1558295597868646521",
+    "yes": "1558295539714363422",
+    "no": "1558295551760404560",
+    "hohoho": "1558295569292726282",
+    "ugh": "1558295585554178148"
 }
 
 @bot.event
@@ -175,7 +184,7 @@ async def join(ctx, *, channel_name: str = None):
     if channel:
         await channel.connect()
         ctx.guild.voice_client.play(discord.FFmpegPCMAudio(SOUNDS["arrive"]))
-        await ctx.send(f"Joined {channel.name}!")
+        await ctx.send(f"<a:arrive:1558295514758512670> Joined {channel.name}!")
         print(f"(!) - Joined channel: {channel.name}")
     else:
         await ctx.send("Please provide a valid channel name or ID.")
@@ -195,7 +204,7 @@ async def leave(ctx):
         while voice_client.is_playing():
             await asyncio.sleep(1)
         await voice_client.disconnect()
-        await ctx.send("Left the voice channel.")
+        await ctx.send("<a:leave:1558295597868646521> Left the voice channel.")
         print("(!) - Left channel")
     else:
         await ctx.send("I'm not in a voice channel.")
@@ -211,7 +220,7 @@ async def respond(response: str, ctx=None):
                 voice_client.stop()
             voice_client.play(discord.FFmpegPCMAudio(response_audio_path))
         if ctx:
-            await ctx.reply(f"Ben says: {response.capitalize()}")
+            await ctx.reply(f"<a:{response}:{EMOJIS[response]}> Ben says: {response.capitalize()}")
 
 @bot.command(name="ask")
 async def ask(ctx, *, question: str):
@@ -247,7 +256,6 @@ async def ask(ctx, *, question: str):
         else:
             await respond(response, ctx)
 
-    await ctx.reply(f"Ben says: {response.capitalize()}")
     print(f"(!) - {user_nickname} asked: {question}")
 
 @bot.command(name="say")
