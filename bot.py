@@ -2,7 +2,7 @@ import os
 import json
 import discord
 from discord.ext import commands
-import random
+import secrets
 import asyncio
 from gtts import gTTS
 import tempfile
@@ -28,10 +28,20 @@ intents = discord.Intents.all()
 intents.voice_states = True
 bot = commands.Bot(command_prefix="b.", intents=intents)
 
+SOUNDS = {
+    "arrive": "Sounds/Arrive.mp3",
+    "leave": "Sounds/Leave.mp3",
+    "yes": "Sounds/Yes.mp3",
+    "no": "Sounds/No.mp3",
+    "hohoho": "Sounds/Laugh.mp3",
+    "ugh": "Sounds/Ugh.mp3"
+}
 
+SETTING1 = "Text To Speech"
+SETTING2 = "Restrict Joining"
+SETTING3 = "Restrict Speaking"
 
 text_to_speech = False
-easter_egg = False
 restrict_joining = False
 restrict_speaking = False
 
@@ -41,10 +51,9 @@ def load_settings():
             return json.load(file)
     except (FileNotFoundError, json.JSONDecodeError):
         return {
-            "Text To Speech": True,
-            "Easter Egg": True,
-            "Restrict Joining": False,
-            "Restrict Speaking": False
+            SETTING1: True,
+            SETTING2: False,
+            SETTING3: False
         }
 
 def save_settings():
@@ -52,21 +61,19 @@ def save_settings():
         json.dump(settings_state, file, indent=4)
 
 def apply_settings():
-    global text_to_speech, easter_egg, restrict_joining, restrict_speaking
-    text_to_speech = settings_state["Text To Speech"]
-    easter_egg = settings_state["Easter Egg"]
-    restrict_joining = settings_state["Restrict Joining"]
-    restrict_speaking = settings_state["Restrict Speaking"]
+    global text_to_speech, restrict_joining, restrict_speaking
+    text_to_speech = settings_state[SETTING1]
+    restrict_joining = settings_state[SETTING2]
+    restrict_speaking = settings_state[SETTING3]
 
 settings_state = load_settings()
 apply_settings()
 
 def get_settings_options():
     return [
-        discord.SelectOption(label=f"Text To Speech - {'Enabled' if settings_state['Text To Speech'] else 'Disabled'}", description="Controls text-to-speech before responses."),
-        discord.SelectOption(label=f"Easter Egg - {'Enabled' if settings_state['Easter Egg'] else 'Disabled'}", description="Controls the bot's secret easter egg."),
-        discord.SelectOption(label=f"Restrict Joining - {'Enabled' if settings_state['Restrict Joining'] else 'Disabled'}", description="Requires Manage Server permission for b.join and b.leave."),
-        discord.SelectOption(label=f"Restrict Speaking - {'Enabled' if settings_state['Restrict Speaking'] else 'Disabled'}", description="Requires Manage Server permission for b.ask."),
+        discord.SelectOption(label=f"Text To Speech - {'Enabled' if settings_state[SETTING1] else 'Disabled'}", description="Controls text-to-speech before responses."),
+        discord.SelectOption(label=f"Restrict Joining - {'Enabled' if settings_state[SETTING2] else 'Disabled'}", description="Requires Manage Server permission for b.join and b.leave."),
+        discord.SelectOption(label=f"Restrict Speaking - {'Enabled' if settings_state[SETTING3] else 'Disabled'}", description="Requires Manage Server permission for b.ask."),
         discord.SelectOption(label="Close", description="Removes this menu.")
     ]
 
@@ -104,10 +111,9 @@ class SettingsDropdown(discord.ui.Select):
 async def settings(ctx, setting: str = None, value: str = None):
     """Allows server admins to configure bot settings."""
     setting_map = {
-        "tts": "Text To Speech",
-        "egg": "Easter Egg",
-        "joining": "Restrict Joining",
-        "speaking": "Restrict Speaking"
+        "tts": SETTING1,
+        "joining": SETTING2,
+        "speaking": SETTING3
     }
     
     if setting and value:
@@ -139,8 +145,14 @@ SOUNDS = {
     "yes": "Sounds/Yes.mp3",
     "no": "Sounds/No.mp3",
     "hohoho": "Sounds/Laugh.mp3",
-    "ugh": "Sounds/Ugh.mp3",
-    "ksi": "Sounds/KSI.mp3"
+    "ugh": "Sounds/Ugh.mp3"
+}
+
+RESPONSES = {
+    "yes": SOUNDS["yes"],
+    "no": SOUNDS["no"],
+    "laugh": SOUNDS["hohoho"],
+    "ugh": SOUNDS["ugh"]
 }
 
 @bot.event
@@ -188,49 +200,66 @@ async def leave(ctx):
     else:
         await ctx.send("I'm not in a voice channel.")
 
+async def respond(response: str, ctx=None):
+    """Plays a sound and sends a message for a given response."""
+    if response in RESPONSES:
+        response_audio_path = RESPONSES[response]
+        voice_client = discord.utils.get(bot.voice_clients)
+        print(f"(!) - Ben says: {response.capitalize()}")
+        if voice_client:
+            if voice_client.is_playing():
+                voice_client.stop()
+            voice_client.play(discord.FFmpegPCMAudio(response_audio_path))
+        if ctx:
+            await ctx.reply(f"Ben says: {response.capitalize()}")
+
 @bot.command(name="ask")
 async def ask(ctx, *, question: str):
-    """Asks Ben a question with optional TTS and a random response sound."""
+    """Asks Ben a question."""
     if restrict_speaking and not ctx.author.guild_permissions.manage_guild:
         return
     
     user_nickname = ctx.author.display_name
     tts_text = f"{user_nickname} asked: {question}"
-    response = random.choice(["yes", "no", "hohoho", "ugh"])
-    response_audio_path = SOUNDS[response]
+    response = secrets.choice(list(RESPONSES.keys()))
 
     voice_client = ctx.guild.voice_client
     if voice_client:
         if voice_client.is_playing():
             voice_client.stop()
 
-        def play_response(_):
-            voice_client.play(discord.FFmpegPCMAudio(response_audio_path))
-
         if text_to_speech:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tts_audio:
                 gTTS(tts_text, lang="en").save(tts_audio.name)
                 tts_filename = tts_audio.name
 
-            def play_response_after_tts(_):
+            async def play_response_after_tts(_):
                 try:
                     os.remove(tts_filename)
                 except Exception as e:
                     print(f"Error deleting TTS file: {e}")
-                play_response(None)
+                await respond(response, ctx)
 
-            voice_client.play(
+            await voice_client.play(
                 discord.FFmpegPCMAudio(tts_filename),
                 after=play_response_after_tts
             )
         else:
-            play_response(None)
+            await respond(response, ctx)
 
     await ctx.reply(f"Ben says: {response.capitalize()}")
     print(f"(!) - {user_nickname} asked: {question}")
-    print(f"(!) - Response: {response.capitalize()}")
 
-
+@bot.command(name="say")
+async def play(ctx, *, sound_name: str):
+    """Gives a specific response."""
+    if restrict_speaking and not ctx.author.guild_permissions.manage_guild:
+        return
+    
+    sound_name = sound_name.lower()
+    if sound_name in RESPONSES:
+        print(f"(!) - {ctx.author.display_name} requested sound: {sound_name}")
+        await respond(sound_name, ctx)
 
 @bot.command(name="commands")
 async def commands_list(ctx):
@@ -250,23 +279,5 @@ async def ping(ctx):
     """Checks latency."""
     latency = round(bot.latency * 1000)
     await ctx.send(f"Pong! Latency is {latency}ms")
-
-@bot.command(name="aski")
-async def aski(ctx):
-    """Funny."""
-    if not easter_egg:
-        return
-
-    special_response = (
-        "from the screen 🖥️ to the ring 💍 to the pen 🖊️ to the king 🤴(⚔️) "
-        "wheres my crown 👑 thats my bling 💎 always trouble when i reign 👊😈"
-    )
-    await ctx.reply(f"Ben says: {special_response}")
-    print("(!) - Played KSI response")
-
-    if ctx.guild.voice_client:
-        ctx.guild.voice_client.play(discord.FFmpegPCMAudio(SOUNDS["ksi"]))
-
-
 
 bot.run(TOKEN)
