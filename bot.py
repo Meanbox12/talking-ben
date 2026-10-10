@@ -233,7 +233,7 @@ async def join(ctx, *, channel_name: str = None):
 
     voice_client = await channel.connect()
     voice_client.play(discord.FFmpegPCMAudio(SOUNDS["arrive"]))
-    await ctx.send(f"{emojis_enabled and f'<a:arrive:{EMOJIS['arrive']} ' or ''}Joined {channel.name}!")
+    await ctx.send(f"{emojis_enabled and f'<a:arrive:{EMOJIS['arrive']}> ' or ''}Joined {channel.name}!")
     print(f"(!) - Joined channel: {channel.name}")
 
 
