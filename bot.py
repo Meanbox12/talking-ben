@@ -8,7 +8,7 @@ import discord
 from discord.ext import commands
 from gtts import gTTS
 
-emojis_enabled = False
+emojis_enabled = True
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -233,7 +233,8 @@ async def join(ctx, *, channel_name: str = None):
 
     voice_client = await channel.connect()
     voice_client.play(discord.FFmpegPCMAudio(SOUNDS["arrive"]))
-    await ctx.send(f"{emojis_enabled and f'<a:arrive:{EMOJIS['arrive']}> ' or ''}Joined {channel.name}!")
+    prefix = emojis_enabled and f"<a:arrive:{EMOJIS['arrive']}> " or ""
+    await ctx.send(f"{prefix}Joined {channel.name}!")
     print(f"(!) - Joined channel: {channel.name}")
 
 
@@ -254,7 +255,8 @@ async def leave(ctx):
         while voice_client.is_playing():
             await asyncio.sleep(0.2)
         await voice_client.disconnect()
-        await ctx.send(f"<a:leave:{EMOJIS['leave']}> Left the voice channel.")
+        prefix = emojis_enabled and f"<a:leave:{EMOJIS['leave']}> " or ""
+        await ctx.send(f"{prefix}Left the voice channel.")
         print("(!) - Left channel")
     else:
         await ctx.send("I'm not in a voice channel.")
@@ -283,7 +285,8 @@ async def respond(response: str, ctx, token):
         else:
             release(ctx.guild.id, token)
 
-        await ctx.reply(f"{emojis_enabled and f'<a:{response}:{EMOJIS[response]}> ' or ''}Ben says: {response.capitalize()}")
+        prefix = emojis_enabled and f"<a:{response}:{EMOJIS[response]}> " or ""
+        await ctx.reply(f"{prefix}Ben says: {response.capitalize()}")
     except Exception:
         release(ctx.guild.id, token)
         raise
