@@ -1,6 +1,6 @@
 # Talking Ben Bot
 
-Need help? Check out the video tutorial here: https://www.youtube.com/watch?v=Qa9Mj-qEtwk **[NOTICE: This tutorial is outdated and will be updated soon.]**
+Need help? Check out the video tutorial here: https://www.youtube.com/watch?v=xQW90Njgi1g
 
 # Setup
 Ensure you have Python installed.
